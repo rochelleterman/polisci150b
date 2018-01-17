@@ -1,0 +1,111 @@
+---
+title: "Interactive Code Lecture 3"
+author: "150B/355B Introduction to Machine Learning"
+date: "1/16/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Setting up the time for a change model
+
+Download and create in object from the .csv file ``TimeChange.csv" into your computer. 
+
+```{r}
+# Remember to set your working directory
+
+# YOUR CODE HERE
+```
+
+## 2. Fitting Multivariate Regression
+
+### 2.1 
+
+As a reminder, here's the bivariate regression we fitted in the last class:
+
+```{r}
+bivariate <- lm(IncumbentVoteShare~Incumbent_Net_Approval, data = elect)
+```
+
+Using `lm`, regress `IncumbentVoteShare` on `Q1_GDP_Growth`, `Q2_GDP_Growth`, `Incumbent_Net_Approval`, and `Incumbent_Party_Two_Terms`. Summarize the output from the model.
+
+```{r}
+# YOUR CODE HERE
+```
+
+### 2.2
+
+Compare the relationship between `Incumbent_Net_Approval` and `IncumbentVoteShare` in the bivariate and multivariate case.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 3. Multivariate Prediction
+
+### 3.1
+
+Write a prediction function using the output from the multivariate regression.
+
+```{r}
+# YOUR CODE HERE
+```
+
+### 3.2 
+
+Compare it to fitted values.
+
+```{r}
+# YOUR CODE HERE
+```
+
+
+## 4. Linear Algebra in R ###
+
+### 4.1
+
+Create three vectors in R.  Make two of the vectors of length 4 and one vector of length 5.
+- vector 1 should equal (1, 2, 3, 4)
+- vector 2 should equal (3, 4, 5, 6)
+- vector 3 should equal (7, 8, 9, 10, 11)
+
+```{r}
+# YOUR CODE HERE
+```
+### 4.2
+
+Confirm the length of the vectors using the length function.
+
+```{r}
+# YOUR CODE HERE
+```
+
+### 4.3
+
+Now, we're going to use `%*%` to take their inner product. First, take the inner product of vector 1 and vector 2. Second, write the inner product of vector 1 and vector 3. What do you notice? 
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 5. Vector based regression
+
+### 5.1 
+
+Write a function to predict from a multivariate regression using vectors.
+
+```{r}
+# YOUR CODE HERE
+```
+
+### 5.2
+
+Compare the predicted values between you two predict functions (one with linear algebra, one without) and from the lm ("canned") model.
+
+```{r}
+# YOUR CODE HERE
+```
+
+

@@ -1,0 +1,105 @@
+---
+title: "Interactive Code Lecture 2"
+author: "150B/355B Introduction to Machine Learning"
+date: "1/11/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Setting up the time for a change model
+
+### 1.1
+
+Download and create in object from the .csv file ``TimeChange.csv" into your computer. What class is the object you just created?
+
+```{r}
+## rm(list=ls())
+## setwd('~/YOUR/DIRECTORY/HERE/Lectures/02_Bivariate')
+
+# YOUR CODE HERE
+```
+
+### 1.2
+
+Print the dimensions of the matrix and the column names.
+
+```{r}
+# YOUR CODE HERE
+```
+
+### 1.3
+
+Provide Summary Statistics for each variable in the data set.
+
+```{r}
+# YOUR CODE HERE
+```
+
+STOP!
+
+
+## 2. Simple Regression
+
+### 2.1 
+
+Our first endeavor will be to predict IncumbentVoteShare with Incumbent_Net_Approval.
+
+Create a plot of IncumbentVoteShare against Incumbent_Net_Approval. Try using the `identify` function to find interesting observations.
+
+```{r}
+# YOUR CODE HERE
+```
+
+### 2.2
+
+Create an object that contains the regression of `IncumbentVoteShare` against `Incumbent_Net_Approval`.
+
+```{r}
+# YOUR CODE HERE
+```
+
+### 2.3
+
+Include a regression line of `IncumbentVoteShare` against `Incumbent_Net_Approval` on the plot (hint: abline might be useful.)
+
+```{r}
+# YOUR CODE HERE
+```
+
+### 2.4 
+
+Now, using the regression object you used to add the line to your plot, check the names that are provided in the `lm` object. Summarize:
+1) Fitted Values
+2) Residuals
+
+And store the coefficients in a vector.
+
+```{r}
+# YOUR CODE HERE
+```
+
+STOP!
+
+## 3. Prediction 
+
+### 3.1
+
+`predict` is an extremely useful function that you've likely worked with before. Today, we're going to write our own function using an `lm` object.
+
+Implement a prediction function that takes as an argument an lm object and a value for net approval.
+
+```{r}
+# YOUR CODE HERE
+```
+
+### 3.2 
+
+Report the prediction for the following values: -4, 100, -100, 50
+ 
+```{r}
+# YOUR CODE HERE
+```
+

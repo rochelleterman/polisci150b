@@ -19,8 +19,8 @@ To get started, we need to install and load the library. Execute the following c
 
 ```{r}
 rm(list=ls())
-setwd('~/YOUR/WORKING/DIRECTORY/04_Classification')
-install.package('pscl')
+setwd('~/Dropbox/berkeley/Teaching/PoliSci_150B/Lectures/04_Classification')
+install.packages('pscl')
 ```
 
 Now, load the pscl into your R environment.
@@ -50,6 +50,7 @@ Let's examine the bivariate relationship between Republicans and their authoriza
 ```{r}
 # YOUR CODE HERE
 ```
+
 ### 1.3
 
 Using the data set, find the Republican who voted against the authorization.
@@ -81,11 +82,7 @@ Let's fit a linear probability model. Using a linear regression, regress the vot
 Using the regression, calculate predicted probabilities for each of the observations.  You can do this by creating an appropriate matrix or with a for loop.
 
 ```{r}
-indep.matrix <- cbind(1, iraqVote$rep, iraqVote$gorevote)
-pred_prob_lm<- c(indep.matrix%*%fit$coef) 
-fitted_lm <- fit$fitted.values
-pred_prob_lm[0:10]
-fitted_lm [0:10]
+# YOUR CODE HERE
 ```
 
 ### 2.3
@@ -109,151 +106,4 @@ What proportion of senators do you classify as a likely Iraq Vote? What proporti
 # YOUR CODE HERE
 ```
 
-
-## 3. Exploring Logit functions
-
-### 3.1
-
-The natural logarithm function in R is `log`. If unfamiliar, try applying log to a few numbers. For example what does the following yield?
-```{r}
-log(exp(5)) 
-```
-
-### 3.2 
-
-Write a function for the logit function.
-```{r}
-# YOUR CODE HERE
-```
-
-### 3.3 
-
-Using the function, plot the logit function from 0 to 1.  Where does the logit function equal 0?  
-```{r}
-# YOUR CODE HERE
-```
-
-### 3.4 
-
-Now write a function for the inverse logit function. Plot the logit function over the range -4 to 4. What do you notice is true about the rate of the change of the function at 0? What about the rate of change at -4 and 4? 
-```{r}
-# YOUR CODE HERE
-```
-
-## 4. Fitting a Logistic Regression ###
-
-Fitting a logistic regression is a generalization of fitting a linear regression. Let's work through an example of a logistic regression together.
-
-We're fitting a simple logistic regression of the vote decision against Republican. To do this, we'll use the `glm` function.
-```{r}
-rep_reg<- glm(y~rep, family = binomial, data = iraqVote)
-```
-
-- `glm` stands for generalized linear model.
-- `y` is the dependent variable here.
-- `rep` is the independent variable.
-
-We specify `family = binomial` to let glm know that we're interested in a logistic regression. And just like `lm`, data is how we specify the data we'll use.
-
-We can check what is available in the object:
-```{r}
-names(rep_reg)
-```
-
-The model produces two predicted probabilities---one for Democrats and one for Republicans. We can extract those predicted probabilities with:
-```{r}
-rep_reg$fitted.values
-```
-
-### 4.1
-
-We will write a function to compute predicted values manually.  Write a function that takes an arbitrary glm object and provide predicted probabilities for a set of observations.
-
-Two hints: 
-1) Use an inner product
-2 ) Use your logit inverse function from above
-```{r}
-# YOUR CODE HERE
-```
-
-### 4.2
-
-Confirm that you're correct using the fitted values from the glm object:
-```{r}
-# YOUR CODE HERE
-```
-
-### 4.3
-
-Now specify a logistic regression of vote on `rep` and `gorevote`:
-```{r}
-# YOUR CODE HERE
-```
-
-### 4.4
-
-Produce predicted probabilities using your function and the data set. To do this, you can either
-1) use a for loop to evaluate the function at the appropriate value
-2) create a matrix and apply the function once
-```{r}
-# YOUR CODE HERE
-```
-
-### 4.5
-
-Compare the predicted probabilities from the linear model and the logistic regression. How do the predicted probabilities of the two functions differ?
-```{r}
-# YOUR CODE HERE
-```
-
-### 4.6
-
-Now, using the probabilities and the classification function and threshold from before, classify the senators using the logistic regression function.
-```{r}
-# YOUR CODE HERE
-```
-
-### 4.7
-
-Now compare the classification from the linear model and the logistic regression. What do you notice?
-```{r}
-# YOUR CODE HERE
-```
-
-### 5. Model Evaluation 
-
-### 5.1 
-
-We are now ready to begin evaluating our model. Write three functions to calculate
-1) Accuracy
-2) Precision
-3) Recall
-
-```{r}
-# YOUR CODE HERE
-```
-
-### 5.2
-
-Using the functions compare the accuracy, precision and recall of the LM classifications and the logistic regression predicions. On the basis of these scores, can you make a strong argument for selecting either model?  
-```{r}
-# YOUR CODE HERE
-```
-
-
-### 5.3 
-
-Finally, what happens as we vary the threshold on our classification? Let's focus on the predictions from the logistic regression? Using a for loop assess how the precision and recall varies as the threshold moves from 0 to 1.
-
-```{r}
-# YOUR CODE HERE
-```
-
-### 5.4 
-
-What is the threshold that maximizes f? What do you notice as we trade off precision and recall?
-
-```{r}
-# YOUR CODE HERE
-```
 

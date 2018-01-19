@@ -1,5 +1,5 @@
 ---
-title: "Interactive Code Lecture 4 / 5"
+title: "Interactive Code Lecture 4"
 author: "150B/355B Introduction to Machine Learning"
 date: "1/18/2018"
 output: html_document
@@ -20,7 +20,7 @@ To get started, we need to install and load the library. Execute the following c
 ```{r}
 rm(list=ls())
 setwd('~/Dropbox/berkeley/Teaching/PoliSci_150B/Lectures/04_Classification')
-# install.package('pscl')
+install.packages('pscl')
 ```
 
 Now, load the pscl into your R environment.
@@ -95,7 +95,7 @@ pred_prob_lm<- c(indep.matrix%*%fit$coef)
 fitted_lm <- fit$fitted.values
 
 # are they the same?
-head(pred_prob_lm)
+head(pred_prob_lm) #note: `head` returns first 5 items from an object
 head(fitted_lm)
 ```
 
@@ -110,13 +110,13 @@ summary(pred_prob_lm)
 
 Write a function that takes the predicted probabilities and a threshold, and returns a classification decision. Use that function to classify each senator as Yay or Nay on the Iraq vote.
 ```{r}
-# function returning class
+# function inputting probability vector and threshold, returns class vector
 class_func <- function(prob, threshold){
   class <- ifelse(prob>threshold, 1, 0)
   return(class)
 }
 
-# estimate class
+# estimate class on predicted probabilities
 class_lm <- class_func(pred_prob_lm, 0.5)
 
 # take a peek
@@ -136,216 +136,3 @@ sum(class_lm[iraqVote$rep==0]) / sum(iraqVote$rep==0)
 # proportion of rep
 sum(class_lm[iraqVote$rep==1]) / sum(iraqVote$rep==1)
 ```
-
-
-## 3. Exploring Logit functions
-
-### 3.1
-
-The natural logarithm function in R is `log`. If unfamiliar, try applying log to a few numbers. For example what does the following yield?
-```{r}
-log(exp(5)) 
-```
-
-### 3.2 
-
-Write a function for the logit function.
-```{r}
-logit_func<- function(p){
-  out<- log(p/( 1- p))
-  return(out)
-}
-```
-
-### 3.3 
-
-Using the function, plot the logit function from 0 to 1.  Where does the logit function equal 0?  
-```{r}
-# get a sequence of poitns
-p <- seq(0,1,len=1000)
-
-# plot those points and logit
-plot(logit_func(p) ~ p, xlab = 'Probability', ylab = 'Logit(p)', type='l' , lwd = 3)
-
-# add lines
-abline(h = 0)
-abline(v = 0.5)
-```
-
-### 3.4 
-
-Now write a function for the inverse logit function. Plot the logit function over the range -4 to 4. What do you notice is true about the rate of the change of the function at 0? What about the rate of change at -4 and 4? 
-```{r}
-# inverse logit
-logit_inv_func<- function(a){
-  out <- 1/(1 + exp(-a))
-  return(out)
-}
-
-# plot
-a_se <- seq(-4, 4, len = 1000)
-linv_out <- logit_inv_func(a_seq)
-
-plot(linv_out~a_seq, type='l', xlab='a', ylab = 'logit_inv(a)')
-abline(v = 0)
-abline(h = 0.5)
-```
-
-## 4. Fitting a Logistic Regression ###
-
-Fitting a logistic regression is a generalization of fitting a linear regression. Let's work through an example of a logistic regression together.
-
-We're fitting a simple logistic regression of the vote decision against Republican. To do this, we'll use the `glm` function.
-```{r}
-rep_reg<- glm(y~rep, family = binomial, data = iraqVote)
-```
-
-- `glm` stands for generalized linear model.
-- `y` is the dependent variable here.
-- `rep` is the independent variable.
-
-We specify `family = binomial` to let glm know that we're interested in a logistic regression. And just like `lm`, data is how we specify the data we'll use.
-
-We can check what is available in the object:
-```{r}
-names(rep_reg)
-```
-
-The model produces two predicted probabilities---one for Democrats and one for Republicans. We can extract those predicted probabilities with:
-```{r}
-rep_reg$fitted.values
-```
-
-### 4.1
-
-We will write a function to compute predicted values manually.  Write a function that takes an arbitrary glm object and provide predicted probabilities for a set of observations.
-
-Two hints: 
-1) Use an inner product
-2 ) Use your logit inverse function from above
-```{r}
-pred_logist<- function(obj, input){
-  input.mat <- as.matrix(cbind(1, input))
-  linear<- input.mat%*% obj$coef  ##inner product of coefficients and the predictors
-  pred<- logit_inv_func(linear) ##
-  return(pred)
-}
-```
-
-### 4.2
-
-Confirm that you're correct using the fitted values from the glm object:
-```{r}
-head(rep_reg$fitted.values)
-head(pred_logist(rep_reg, iraqVote$rep))
-```
-
-### 4.3
-
-Now specify a logistic regression of vote on `rep` and `gorevote`:
-```{r}
-gore_reg<- glm(y~rep + gorevote, family = binomial,data = iraqVote)
-```
-
-### 4.4
-
-Produce predicted probabilities using your function and the data set. To do this, you can either
-1) use a for loop to evaluate the function at the appropriate value
-2) create a matrix and apply the function once
-```{r}
-logist_gore_preds <- pred_logist(gore_reg, cbind(iraqVote$rep, iraqVote$gorevote))
-head(logist_gore_preds)
-head(gore_reg$fitted.values)
-```
-
-### 4.5
-
-Compare the predicted probabilities from the linear model and the logistic regression. How do the predicted probabilities of the two functions differ?
-```{r}
-plot(pred_prob_lm ~ c(logist_gore_preds), xlab = 'Logistic predictions', ylab = 'Linear predictions')
-abline(h =1)
-abline(v = 1)
-```
-
-### 4.6
-
-Now, using the probabilities and the classification function and threshold from before, classify the senators using the logistic regression function.
-```{r}
-class_gore_preds<- class_func(logist_gore_preds, 0.5)
-```
-
-### 4.7
-
-Now compare the classification from the linear model and the logistic regression. What do you notice?
-```{r}
-table(class_lm, class_gore_preds)
-```
-
-### 5. Model Evaluation 
-
-### 5.1 
-
-We are now ready to begin evaluating our model. Write three functions to calculate
-1) Accuracy
-2) Precision
-3) Recall
-
-```{r}
-accuracy <- function(predicted, true){
-  score <- (sum(predicted & true) + sum(!predicted & !true)) / length(true)
-  return(score)
-}
-
-precision <- function(predicted, true){
-  score <- sum(predicted & true) / sum(predicted)
-  return(score)
-}
-
-recall <- function(predicted, true){
-  recall = sum(predicted & true) / sum(true)
-}
-```
-
-### 5.2
-
-Using the functions compare the accuracy, precision and recall of the LM classifications and the logistic regression predicions. On the basis of these scores, can you make a strong argument for selecting either model?  
-```{r}
-cat('Linear Regression', '\n')
-cat('Accuracy', '\n'); accuracy(class_lm, iraqVote$y)
-cat('Precision', '\n'); precision(class_lm, iraqVote$y)
-cat('Recall', '\n'); recall(class_lm, iraqVote$y)
-
-cat('Logistic Regression', '\n')
-cat('Accuracy', '\n'); accuracy(class_gore_preds, iraqVote$y)
-cat('Precision', '\n'); precision(class_gore_preds, iraqVote$y)
-cat('Recall', '\n'); recall(class_gore_preds, iraqVote$y)
-```
-
-
-### 5.3 
-
-Finally, what happens as we vary the threshold on our classification? Let's focus on the predictions from the logistic regression only. Using a for loop, assess how the precision and recall varies as the threshold moves from 0 to 1.
-
-```{r}
-# create a vector of different threshold possibilities
-thresh <- seq(0.0, 1, len = 1000)
-
-# loop through and calculate classes based on these probabilities
-store_f <- store_prec <- store_rec <- c()
-for(z in 1:length(thresh)){
-  temp_class<- class_func(logist_gore_preds, thresh[z])
-  store_prec[z]<- precision(temp_class, iraqVote$y)
-  store_rec[z]<- recall(temp_class, iraqVote$y)
-  store_f[z]<- store_prec[z]*store_rec[z]/(store_prec[z] + store_rec[z])
-}
-```
-
-### 5.4 
-
-What is the threshold that maximizes f? What do you notice as we trade off precision and recall?
-
-```{r}
-thresh[which.max(store_f)]
-plot(store_prec ~ store_rec)
-```
-

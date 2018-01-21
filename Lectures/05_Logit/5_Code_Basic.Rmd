@@ -1,0 +1,328 @@
+---
+title: "Interactive Code Lecture 5"
+author: "150B/355B Introduction to Machine Learning"
+date: "1/23/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Setting up Iraq War Vote dataset
+
+### 1.1
+
+We're going to analyze the Senate's vote on the Iraq war authorization.We'll find this data set in the PSCL package, which is called `pscl` in R.
+
+To get started, we need to install and load the library. Execute the following code to install pscl.
+
+```{r}
+rm(list=ls())
+setwd('~/Dropbox/berkeley/Teaching/PoliSci_150B/Lectures/05_Logit')
+# install.packages('pscl')
+```
+
+Now, load the pscl into your R environment.
+
+```{r}
+library(pscl)
+```
+
+To load the data set, execute the following code.
+
+```{r}
+data(iraqVote)
+```
+
+Checking the column names of the data set we have:
+- y : The vote on the Iraq war authorization
+- state.abb : Name of the senator's state
+- name : senator's name
+- rep : an indicator = TRUE if the senator is a Republican, FALSE if not a Republican
+- state.name : the name of the senator's state
+- gorevote: the share of the two party vote cast for Al Gore in the 2000 election
+
+### 1.2
+
+Let's examine the bivariate relationship between Republicans and their authorization vote. To do this, use the `table` function. The syntax is `table(VAR_ON_ROWS, VAR_ON_COLS)`. How many Republicans voted against the authorization?
+
+```{r}
+table(iraqVote$rep, iraqVote$y)
+```
+
+### 1.3
+
+Using the data set, find the Republican who voted against the authorization.
+```{r}
+iraqVote[iraqVote$rep==TRUE & iraqVote$y == 0, ]
+```
+
+### 1.4
+
+Subset the data to just Democrats and make a plot of the iraq authorization vote against the share of the two party vote for Gore. 
+
+What do you notice about Democrats who come from states where Gore performed better? Where Gore performed worse?
+```{r}
+#  subset for democrats
+dems <- subset(iraqVote, rep==FALSE)
+
+# create a scatterplot
+plot(y = dems$y, x = dems$gorevote)
+```
+
+## 2. Prediction using linear models
+
+### 2.1 
+
+Let's fit a predictive model using a linear probability model. Using a linear regression, regress the vote against rep and gorevote.
+```{r}
+fit <- lm(y ~ rep + gorevote, data = iraqVote)
+summary(fit)
+```
+
+### 2.2
+
+Using the regression, calculate predicted probabilities for each of the observations.  You can do this by creating an appropriate matrix or with a for loop.
+```{r}
+# create matrix of predictors
+indep.matrix <- cbind(1, iraqVote$rep, iraqVote$gorevote)
+
+# multiply by coefficients
+pred_prob_lm<- c(indep.matrix%*%fit$coef) 
+
+# we can also take the fitted values from the model
+fitted_lm <- fit$fitted.values
+
+# are they the same?
+head(pred_prob_lm) #note: `head` returns first 5 items from an object
+head(fitted_lm)
+```
+
+### 2.3
+
+Summarize the predicted probabilities. What do you notice about the predicted probabilities? (in particular, the maximum and minimum values)
+```{r}
+summary(pred_prob_lm)
+```
+
+### 2.4
+
+Write a function that takes the predicted probabilities and a threshold, and returns a classification decision. Use that function to classify each senator as Yay or Nay on the Iraq vote.
+```{r}
+# function inputting probability vector and threshold, returns class vector
+class_func <- function(prob, threshold){
+  class <- ifelse(prob>threshold, 1, 0)
+  return(class)
+}
+
+# estimate class on predicted probabilities
+class_lm <- class_func(pred_prob_lm, 0.5)
+
+# take a peek
+head(class_lm)
+```
+
+### 2.5
+
+What proportion of senators do you classify as a likely Iraq Vote? What proportion of Democrats and Republicans?
+```{r}
+# proportion of all senators
+summary(class_lm)
+
+# proportion of dems
+sum(class_lm[iraqVote$rep==0]) / sum(iraqVote$rep==0)
+
+# proportion of rep
+sum(class_lm[iraqVote$rep==1]) / sum(iraqVote$rep==1)
+```
+
+## 3. Exploring Logit functions
+
+### 3.1
+
+The natural logarithm function in R is `log`. If unfamiliar, try applying log to a few numbers. For example what does the following yield?
+```{r}
+log(exp(5)) 
+```
+
+### 3.2 
+
+Complete the code below to write a function for the logit function.
+```{r}
+logit_func<- function(p){
+  ### YOUR CODE HERE
+  return(out)
+}
+```
+
+### 3.3 
+
+The code below plots the logit function from 0 to 1.  Where does the logit function equal 0?  
+```{r}
+# get a sequence of poitns
+p <- seq(0,1,len=1000)
+
+# plot those points and logit
+plot(logit_func(p) ~ p, xlab = 'Probability', ylab = 'Logit(p)', type='l' , lwd = 3)
+
+# add lines
+abline(h = 0)
+abline(v = 0.5)
+```
+
+### 3.4 
+
+Now we're going to write a function for the inverse logit function. Complete the code below.
+
+```{r}
+# inverse logit
+logit_inv_func<- function(a){
+  # YOUR CODE HERE
+  return(out)
+}
+```
+
+Plot the logit function over the range -4 to 4. What do you notice is true about the rate of the change of the function at 0? What about the rate of change at -4 and 4? 
+
+```{r}
+# plot
+a_seq <- seq(-4, 4, len = 1000)
+linv_out <- logit_inv_func(a_seq)
+
+plot(linv_out~a_seq, type='l', xlab='a', ylab = 'logit_inv(a)')
+abline(v = 0)
+abline(h = 0.5)
+```
+
+## 4. Fitting a Logistic Regression
+
+Fitting a logistic regression is a generalization of fitting a linear regression. Let's work through an example of a logistic regression together.
+
+We're fitting a simple logistic regression of the vote decision against Republican. To do this, we'll use the `glm` function.
+```{r}
+rep_reg<- glm(y~rep, family = binomial, data = iraqVote)
+```
+
+- `glm` stands for generalized linear model.
+- `y` is the dependent variable here.
+- `rep` is the independent variable.
+
+We specify `family = binomial` to let glm know that we're interested in a logistic regression. And just like `lm`, data is how we specify the data we'll use.
+
+We can check what is available in the object:
+```{r}
+names(rep_reg)
+```
+
+The model produces two predicted probabilities---one for Democrats and one for Republicans. We can extract those predicted probabilities with:
+```{r}
+rep_reg$fitted.values
+```
+
+### 4.1:
+
+Fit a logistic regression of `y` on `rep` and `gorevote`. Store it in an object called `gore_reg`.
+```{r}
+gore_reg <- # YOUR CODE HERE
+```
+
+### 4.2
+
+Retrive the predicted probabilities from the model above and store it in an object `logist_gore_preds`.
+```{r}
+logist_gore_preds <- # YOUR CODE HERE
+```
+
+### 4.3
+
+The code below plots the predicted probabilities from the linear model and the logistic regression. Using this plot, how do the predicted probabilities of the two functions differ?
+```{r}
+plot(pred_prob_lm ~ c(logist_gore_preds), xlab = 'Logistic predictions', ylab = 'Linear predictions')
+abline(h =1)
+abline(v = 1)
+```
+
+### 4.4
+
+Now, using the probabilities and the classification function and threshold from 2.4, classify the senators using the logistic regression function.
+```{r}
+class_gore_preds <- # YOUR CODE HERE
+```
+
+### 4.5
+
+Using `table`, compare the classification from the linear model and the logistic regression. What do you notice?
+```{r}
+# YOUR CODE HERE
+```
+
+### 5. Model Evaluation 
+
+### 5.1 
+
+We are now ready to begin evaluating our model. We want to write three functions to calculate:
+1) Accuracy
+2) Precision
+3) Recall
+
+Functions 1 and 2 are written for you. Write 3 on your own.
+
+```{r}
+accuracy <- function(predicted, true){
+  score <- (sum(predicted & true) + sum(!predicted & !true)) / length(true)
+  return(score)
+}
+
+precision <- function(predicted, true){
+  score <- sum(predicted & true) / sum(predicted)
+  return(score)
+}
+
+# WRITE A FUNCTION FOR RECALL HERE
+```
+
+### 5.2
+
+The code below uses the functions compare the accuracy, precision, and recall of the LM classifications and the logistic regression predicions. On the basis of these scores, can you make a strong argument for selecting either model?  
+```{r}
+cat('Linear Regression', '\n')
+cat('Accuracy', '\n'); accuracy(class_lm, iraqVote$y)
+cat('Precision', '\n'); precision(class_lm, iraqVote$y)
+cat('Recall', '\n'); recall(class_lm, iraqVote$y)
+
+cat('Logistic Regression', '\n')
+cat('Accuracy', '\n'); accuracy(class_gore_preds, iraqVote$y)
+cat('Precision', '\n'); precision(class_gore_preds, iraqVote$y)
+cat('Recall', '\n'); recall(class_gore_preds, iraqVote$y)
+```
+
+
+### 5.3 
+
+Finally, what happens as we vary the threshold on our classification? Let's focus on the predictions from the logistic regression. 
+
+Using a for loop, assess how the precision, recall, and f scores varies as the threshold moves from 0 to 1.
+
+```{r}
+# create a vector of different threshold possibilities
+thresh <- seq(0.0, 1, len = 1000)
+
+# loop through and calculate classes based on these probabilities
+store_f <- store_prec <- store_rec <- c()
+for(z in 1:length(thresh)){
+  temp_class<- class_func(logist_gore_preds, thresh[z])
+  store_prec[z]<- precision(temp_class, iraqVote$y)
+  store_rec[z]<- recall(temp_class, iraqVote$y)
+  store_f[z]<- store_prec[z]*store_rec[z]/(store_prec[z] + store_rec[z])
+}
+```
+
+### 5.4 
+
+What is the threshold that maximizes f? What do you notice as we trade off precision and recall?
+
+```{r}
+# YOUR CODE HERE
+```
+

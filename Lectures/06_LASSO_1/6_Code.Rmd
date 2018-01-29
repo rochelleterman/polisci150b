@@ -1,0 +1,224 @@
+---
+title: "Interactive Code Lecture 6"
+author: "150B/355B Introduction to Machine Learning"
+date: "1/25/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Setting up New York Times Annotated Corpus
+
+### 1.1
+
+Today, we are going to analyze the New York Times Annonated Corpus. From the coursework site please download `NYT.RData` and load the file.
+
+```{r}
+rm(list=ls())
+setwd('~/YOUR/DIRECTORY/HERE')
+load("NYT.RData")
+```
+
+This loads a list, `nyt_list`, with the following components:
+- train : the document term matrix for the training set
+- train_label: an indicator equal to 1 if the story comes from the national desk for each document in the training set
+- test: the document term matrix for the test set.  
+- test_label: an indicator equal to 1 if the story comes from the national desk for each document in the test set
+
+We will work with `train` and `train_label` to build our prediction models. We will use the `test` set to test the fit of our model.  
+
+Let's put these components in individual objects.
+
+```{r}
+train<- nyt_list[[1]]
+train_label<- nyt_list[[2]]
+test<- nyt_list[[3]]
+test_label<- nyt_list[[4]]
+```
+
+### 1.2 
+
+Print the dimensions of the train and test set.
+
+```{r}
+dim(test)
+dim(train)
+```
+
+### 1.3
+
+Note that the `train` and `test` matrices do not contain a column for the labels. The code below combines the dtm and labels into a data frame for the train and test sets.
+```{r}
+train.df <- as.data.frame(cbind(train, train_label))
+test.df <- as.data.frame(cbind(test, test_label))
+```
+
+## 2. Linear Probability Model
+
+### 2.1 
+
+We are ready to apply a linear probability model to perform classification. Using the `lm` function regress `train_label` against all the words in train. To do this, note that you can include all the variable in a regression using the following syntax:
+`full_reg<- lm(train_label ~ . , data = train.df)`
+
+The `~.` tells R to include all the variables in the data frame.
+
+```{r}
+full_reg<- lm(train_label ~ . , data = train.df)
+```
+
+### 2.2
+
+Analyze the coefficients from full_reg , what do you notice?
+
+```{r}
+summary(full_reg)
+
+# Count the number of coefficients dropped from the model
+length(which(is.na(full_reg$coeff)==T))
+```
+
+### 2.3
+
+We are now going to make predictions using the training data and the test data and compare their properties.
+
+Using the `predict` function, make predictions for all observations in the training set.  
+
+```{r}
+train_pred <- predict(full_reg, as.data.frame(train))
+```
+
+### 2.4
+
+Then, classify the documents as national or not using a threshold of 0.5.
+
+```{r}
+class_doc <- ifelse(train_pred > 0.5, 1, 0)
+```
+
+### 2.5
+
+Assess your classification to the actual data. What do you notice?
+
+```{r}
+table(class_doc, train_label)
+```
+
+### 2.6
+
+Now, use the model to make a prediction for the *test* data and classify using a 0.5 threshold.
+
+Assess the accuracy of your classification by comparing it to the actual test data. What do you notice?
+
+```{r}
+# predict test observations
+test_pred<- predict(full_reg, as.data.frame(test))
+
+# classify using threshold of 0.5
+class_pred<- ifelse(test_pred > 0.5, 1, 0)
+
+# create confusion matrix
+table(class_pred, test_label)
+
+# Get accuracy score of our predictions
+(sum(class_pred & test_label) + sum(!class_pred & !test_label)) / length(test_label)
+
+# That is really low accuracy! In fact we could just guess and do better:
+set.seed(123)
+rand_guess<- rbinom(length(test_label), prob = 0.25, size = 1)
+sum(diag(table(rand_guess, test_label)))/length(test_label)
+```
+
+STOP!
+
+
+## 3. Fit LASSO regression
+
+### 3.1
+
+We are going to use the glmnet library to fit the LASSO regression.
+
+```{r}
+install.packages('glmnet')
+library(glmnet)
+```
+
+### 3.2 
+
+The syntax for the glmnet model is as follows:
+`lasso <- glmnet(x = train, y = train_label)`
+
+This defaults to linear regression. To do logistic regression you can fit the same model, but add
+`lasso_logist <- glmnet(x = train, y = train_label, family = 'binomial')`
+
+Fit a LASSO linear regression.
+
+```{r}
+lasso <- glmnet(x = train, y = train_label)
+```
+
+### 3.3 
+
+The LASSO function automatically fits the model for several values of lambda.  
+
+Using the `colSums` function, sum up the columns of `lasso$beta`. Plot that against `lasso$lambda`. What generally happens as lambda increases?  
+
+```{r}
+# sum absolute values of the betas
+sum_beta <- colSums(abs(lasso$beta))
+
+# plot against values of lambda
+plot(sum_beta ~ lasso$lambda)
+```
+
+### 3.4 
+
+In class next week we're going to discuss methods for selecting lambda.  Today, we're going to set a particular value of lambda arbitrarily and then assess its performance. We will set lambda to 0.05
+
+Formulate predictions for the training set using the following syntax:
+`lasso_pred <- predict(lasso, newx=train, s = 0.05 )`
+
+- `lasso` is the lasso regression
+- `newx` are the values you want to predict
+- `s` is the value of lambda.
+
+Classify the observations using a threshold of 0.5. Then assess the accuracy of those predictions by comparing them to the training set labels.
+
+```{r}
+# formulate predictions
+lasso_pred <- predict(lasso, newx=train, s = 0.05 )
+
+# classify obs using threshold of 0.5
+class_lasso <- ifelse(lasso_pred>0.5, 1, 0)
+
+# create confusion matrix
+table(class_lasso, train_label)
+
+# get accuracy score
+(sum(class_lasso & train_label) + sum(!class_lasso & !train_label)) / length(train_label)
+
+## Notice that we don't have the perfect in-sample fit that we had before.
+## This is a good thing!  it means that we're not overfitting our data. 
+```
+
+### 3.5 
+
+Now formulate predictions for the test set,  classify the documents as national or not with a threshold of 0.5, and assess the accuracy of those predictions by comparing them to the test set labels.  What do you notice about the quality of the predictions from LASSO relative to the predictions from OLS?
+
+```{r}
+# formulate predictions
+lasso_test <- predict(lasso, newx=test, s = 0.05 )
+
+# classify obs using threshold of 0.5
+class_lasso_test <- ifelse(lasso_test>0.5, 1, 0)
+
+# create confusion matrix
+table(class_lasso_test, test_label)
+
+# get accuracy score
+(sum(class_lasso_test & test_label) + sum(!class_lasso_test & !test_label)) / length(test_label)
+
+## That is much better out of sample accuracy! (but notice lower than our in sample accuracy).
+```
+

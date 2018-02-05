@@ -1,0 +1,161 @@
+---
+title: "Interactive Code Lecture 7"
+author: "150B/355B Introduction to Machine Learning"
+date: "1/30/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Setting up New York Times Annotated Corpus
+
+Today, we are going to continue analyzing the New York Times Annonated Corpus. We have already analyzed this and noted that vanilla LM results in overfitting. This code shows how to use LASSO to obtain a fit that doesn't suffer the same problems.
+
+Run the code below to get started.
+
+```{r}
+rm(list=ls())
+setwd('~/Dropbox/berkeley/Teaching/PoliSci_150B/Lectures/07_LASSO_2')
+
+load("NYT.RData")
+train<- nyt_list[[1]]
+train_label<- nyt_list[[2]]
+test<- nyt_list[[3]]
+test_label<- nyt_list[[4]]
+
+## Git the LASSO regression (we did this last week)
+library(glmnet)
+lasso<- glmnet(x = train, y = train_label)
+```
+
+## 2. Finding Lambda
+
+### 2.1
+
+We're now ready to devise a method for selecting the appropriate value of lambda. First we need to define our loss function. To do this, write a function calculate the mean squared error:
+
+```{r}
+mse <- function(preds, data){
+  diff <- preds - data
+  diff_squared<- diff^2
+  return(mean(diff_squared))
+}
+```
+
+### 2.2
+
+Now, let's calculate the MSE for the in-sample fit from the LASSO regression. 
+
+1. Make in-sample predictions using LASSO for each value of lambda. 
+2. Then calculate the MSE across those predictions. 
+3. Finally, make a plot of the MSE values against lambda values.
+
+```{r}
+# make predictions for each value of lamda
+pred_lasso <- predict(lasso, newx = train) 
+
+# calculate MSE for each lamda value
+store_mse_in <- c()
+for(z in 1:ncol(pred_lasso)){
+  predictions <- pred_lasso[,z] #get predictors for that lambda value
+  store_mse_in[z] <- mse(predictions, train_label)
+}
+
+# plot MSE x lamda
+plot(store_mse_in~lasso$lambda)
+```
+
+Recalling that smaller MSE is better, what does the insample fit tell us is the optimal lambda value? How much are we penalizing the model then?
+
+## 3. Cross Validation
+
+### 3.1 
+
+We want to devise a way to do cross validation. With LASSO we will have a canned method for doing the cross validation. 
+
+(I provide instructions below on how to manually perform cross validation---helpful for applying the procedure to many other methods.)
+
+To perform cross validation with glmnet we use cv.glmnet
+
+```{r}
+lasso_cv<- cv.glmnet(x = train, y = train_label)
+```
+
+You can specify the loss function (with `type.measure =` ). For example, for classification you might pick accuracy.  The default is MSE. `nfolds` allows you to set the number of folds used for cross validation.
+
+There are lots of built in functions in cv.glmnet. Try plotting the cv.glmnet object you created. This shows how the Mean-Squared Error for the cross validated predictions changes across different values of lambda.
+
+```{r}
+plot(lasso_cv)
+```
+
+We can access the lambdas that lead to the smallest mse with `obj$lambda.min` and the lambda values attempted with `obj$lambda`
+
+```{r}
+lasso_cv$lambda.min
+lasso_cv$lambda
+```
+
+### 3.2 
+
+The plot object gave us the in sample fit.  Let's see how it compares to the out-of-sample fit.
+
+To do this, make predictions for the test data using each value of lambda from cv.glmnet
+
+```{r}
+out_of_sample<- c()
+for(z in 1:length(lasso_cv$lambda)){
+  preds1<- predict(lasso_cv, newx = test, s= lasso_cv$lambda[z])
+  out_of_sample[z]<- mse(preds1, test_label)
+}
+```
+
+### 3.3
+
+Plot the out-of-sample mse against the estimated mse from cross validation (which you can access with `obj$cvm`).
+
+```{r}
+plot(lasso_cv$cvm ~ lasso_cv$lambda) 
+plot(out_of_sample ~ lasso_cv$lambda)
+```
+
+How well did cross validation do in selecting the appropriate value of lambda?
+
+
+## Bonus section: your own cross validation 
+
+I fit my own cross validations using the following procedure:
+
+1) Use the sample function with replace = T to assign each observation to a fold
+2) Use a for loop to train on the K-1 subsets of the data
+3) Predict for the held out data for that round
+4) I then store those out of sample predictions
+
+Using this procedure, manually determine how many of the top occurring words you should include to make the best mean squared error predictions
+
+```{r}
+#first, determining the folds
+set.seed(2636815)
+folds<- sample(1:10, nrow(train), replace=T) # notice I'm sampling with replacement
+```
+
+Now, let's write a for loop for fitting the model:
+
+```{r}
+# note, that the top 10 words might change depending on the cross validation run
+store_pred<- rep(NA,nrow(train))
+for(z in 1:10){
+  cv_train_set<- which(folds!=z) # these are the ``training data"
+  cv_test_set<- which(folds==z) # these are the ``test data"
+  counts<- apply(train[cv_train_set, ], 2, sum)
+  top_10 <- order(counts, decreasing=T)[1:10]
+  reg1<- lm(train_label[cv_train_set]~., data = as.data.frame(train[cv_train_set, top_10]))
+  store_pred[cv_test_set]<- predict(reg1, newdata = as.data.frame(train[cv_test_set,]))
+  
+}
+
+out_mse<- mse(train_label, store_pred)
+out_acc<- sum(diag(table(train_label, ifelse(store_pred>0.5, 1, 0))))/200
+```

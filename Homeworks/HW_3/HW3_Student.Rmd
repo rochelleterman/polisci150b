@@ -1,0 +1,72 @@
+---
+title: "POL 150B/355B Homework 3"
+date: "Due: 2/8/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = T,
+	warning = F
+)
+```
+
+This homework assignment continues from the last, where we used *logistic regression* to perform supervised learning on text documents. In the current assignment, we'll be doing the same thing -- analyzing press releases for the presence of credit claiming -- only now with *LASSO*. We'll then compare the two models, LASSO and logistic regression, on  performance.
+
+Run the code below (taken from the previous assignment) to get started.
+
+```{r}
+# Load `CreditClaim.RData` into R.
+load("CreditClaim.RData")
+dtm <- as.data.frame(credit_claim$x)
+dtm$y <- credit_claim$y
+```
+
+## 1
+
+Using a logistic regression, predict the credit claiming labels using all the words. What error message do you receive and what do you notice about the coefficients?
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 2
+
+Using the `glmnet` library, fit a LASSO regression. Plot the total number of non-zero coefficients at different values of λ.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 3
+
+What value of λ provides the highest accuracy? Print the non-zero coefficients for that model.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 4
+
+The file `scores.csv` is a 4 x 3 spreadsheet containing the acccuracy, predicion, and recall scores for each of the 4 models we estimated in the last assignment. Load it into R.
+
+```{r}
+scores <- read.csv("scores.csv")
+```
+
+Compare the in sample accuracy of the linear probability models (10 and 20 word versions), the logistic regressions (10 and 20 word versions), and the LASSO model. Which model has the highest in sample accuracy?
+
+```{r}
+# YOUR CODE HERE
+```
+
+
+## 6
+
+Perform leave one out cross validation for the LASSO model, providing the level of accuracy for each value of λ. How does the out of sample accuracy compare to the in sample accuracy?
+
+[NB: This might take longer computing time.]
+
+```{r}
+# YOUR CODE HERE
+```

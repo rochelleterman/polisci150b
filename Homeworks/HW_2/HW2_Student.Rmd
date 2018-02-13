@@ -1,0 +1,130 @@
+---
+title: "POL 150B/350B Homework 2"
+date: "Due: 1/30/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = T,
+	warning = F
+)
+```
+
+In this homework assignment we will use linear and logistic regression to perform *supervised learning* on text documents.
+
+Supervised learning methods are methods for classifying observations into a pre-determined set of categories. When applied to text, the goal of supervised learning is to classify a collection of documents into categories. For example, we might want to know if tweets are positive or negative, if a speech is liberal or conservative, or if a conversation is about politics or not. We could perform the analysis by hand, but that is often cumbersome and time consuming. Supervised learning methods subsidize hand coding and reduce the cost of analyzing text documents.
+
+Supervised learning methods begin just like traditional hand coding classification. Researchers have a set of predetermined categories and then place a randomly selected sample of documents into those categories. This constitutes a *training set* that we will use to train an algorithm for classification. The hand coding decisions will be our *dependent variable*. We will also refer to the hand classification decision as the *labels* for the documents.
+
+To use the hand coded documents for classification, we need to first convert the texts to data. To do this, we represent the texts as a *count vector*. We will describe this process later in the course, but the basic intuition is that we count the number of times a set of words occurs in each document, and then use the count of words as a predictor. In other words, the count of each word in each document will constitute our *predictors*.
+
+Using the labels and the word counts, we then use a prediction algorithm to learn the relationship between word counts and labels. For example, you might use logistic regression to regress the hand coded decision on the word counts. We can then use this model to formulate predictions for the unlabeled documents.
+
+The result of the process is that all documents are classified into categories. The benefit is that the automatic classification is much faster than the hand classification.
+
+We can write out supervised learning in the following steps:
+
+1. Hand classify randomly sampled documents into a set of predetermined categories. This is the training set and we will call the classification of each document its *label*.
+
+2. Represent the documents in the training set as *count vectors*. Each entry of the count vector will represent the number of time a particular word occurred in that document.
+
+3. With the hand-coded documents and the count vectors, use a classification algorithm to learn the relationship between the predictors and the labels.
+
+4. Finally, the estimated relationship is used to classify the unlabeled documents.
+
+# Credit Claiming in Congressional Texts
+
+In *The Impression of Influence*, Grimmer, Westwood, and Messing analyze the rate members of Congress claim credit for government spending in their press releases. Members of Congress issue a lot of press releases: from 2005 to 2010, House members issues nearly *170,000* press releases.
+
+Given that it would be hard to analyze such a large collection by hand, GWM decided to use supervised learning methods. They hired a team of Stanford undergraduates to classify a random sample of 800 press releases as credit claiming or not. They then represented the texts as a count vector.
+
+The object `CreditClaim.RData` contains the list `credit_claim`. The first element of this list is the count vector representation of the documents (labeled `x`, sometimes called a *document term matrix*) and the second element are the labels (`y`).
+
+## 1
+
+To get started, load `CreditClaim.RData` into R. Create an object `dtm` that holds the document term matrix. Create an object `y` that contains the labels.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 2
+
+Identify the twenty words that are the most prevalent (occur most often) across the documents. Print those twenty words and comment briefly: what do you notice about the words?
+
+**Hint** `colSums` and `sort` will be helpful here.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 3
+
+Create 2 objects: `dtm.20` should contain all the documents with only the 20 most common words. `dtm.10` should contain only the 10 most common words.
+
+Then add a column to both data frames called `y` that holds the labels for those documents.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 4
+
+We are going to predict the label using a subset of the document term matrix in four separate models. Print a summary for all four models.
+
+a) Predict the credit claiming label with the 10 most common words, using a linear probability model. Call this `model_1`
+b) Predict the credit claiming label with the 10 most common words, using a logistic regression. Call this `model_2`
+c) Predict the credit claiming label with the 20 most common words, using a linear probability model. Call this `model_3`
+d) Predict the credit claiming label with the 20 most common words, using a logistic regression. Call this `model_4`
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 5
+
+Create 3 plots:
+a) The preditions of model 1 against the predictions for model 2.
+b) The preditions of model 1 against the predictions for model 3.
+c) The preditions of model 3 against the predictions for model 4.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 6
+
+Using a threshold of 0.5, classify each document as credit claiming or not. (NB: values of 0.5 or above should be classified as a `1`).
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 7
+
+Provide the accuracy, precision, and recall for each model. Compare the in-sample performance across models. Which models perform best for each performance metric?
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 8
+
+Now we are going to compare the in-sample fit to the out-of-sample fit. To do this, we’re going to use leave one out cross validation (LOOCV).
+
+For each of document, perform the following procedure for both the LPM model with 20 predictors and the logistic regression with 20 features:
+  - For document *i* Fit the LPM and logistic regression to all documents but *i* (we leave this document out of the model)
+  - Make a prediction for document *i* using both the LPM and logistic regression and a classification for the document, with a 0.5 threshold
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 9
+
+How does the accuracy from the in sample fit (Question 7) compare to the accuracy for the out of sample fit (Question 8)?
+
+```{r}
+# YOUR CODE HERE
+```

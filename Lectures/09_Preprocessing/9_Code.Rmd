@@ -1,0 +1,298 @@
+---
+title: "Interactive Code Lecture 9"
+author: "150B/355B Introduction to Machine Learning"
+date: "2/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Preprocessing a Corpus
+
+First let's load our required packages.
+
+```{r}
+rm(list=ls())
+setwd('~YOUR/PATH/HERE/06_Preprocessing')
+library(tm) # Framework for text mining
+library(RTextTools) # a machine learning package for text classification written in R
+library(qdap) # Quantiative discourse analysis of transcripts
+library(qdapDictionaries)
+library(dplyr) # Data preparation and pipes $>$
+library(ggplot2) # for plotting word frequencies
+library(SnowballC) # for stemming
+```
+
+A corpus is a collection of texts, usually stored electronically, and from which we perform our analysis. A corpus might be a collection of news articles from Reuters or the published works of Shakespeare. 
+
+Within each corpus we will have separate articles, stories, volumes, each treated as a separate entity or record. Each unit is called a "document."
+
+For this unit, we will be using a section of Machiavelli's Prince as our corpus. Since The Prince is a monograph, we have already "chunked" the text, so that each short paragraph or "chunk" is considered a "document."
+
+### 1.1 Corpus Sources and Readers
+
+The `tm` package supports a variety of sources and formats. Run the code below to see what it includes
+
+```{r}
+getSources()
+getReaders()
+```
+
+Here we'll be reading documents from a csv file. Each row being a document, and columns for text and metadata (information about each document). This is the easiest option if you have metadata.
+
+```{r}
+docs.df <-read.csv("mach.csv", header=TRUE) #read in CSV file
+docs <- Corpus(VectorSource(docs.df$text))
+docs
+```
+
+Once we have the corpus, we can inspect the documents using inspect()
+
+```{r}
+# see the 16th document
+inspect(docs[16])
+```
+
+And see the text using the `as.chracter`
+
+```{r}
+ # see content for 16th document
+as.character(docs[[16]])
+```
+
+### 1.2 Preprocessing functions 
+
+Many text analysis applications follow a similar 'recipe' for preprecessing, involving:
+
+1. Tokenizing the text to unigrams (or bigrams, or trigrams)
+2. Converting all characters to lowercase
+3. Removing punctuation
+4. Removing numbers
+5. Removing Stop Words, inclugind custom stop words
+6. "Stemming" words, or lemmitization. There are several stemming alogrithms. Porter is the most popular.
+7. Creating a Document-Term Matrix
+8. Weighting features
+9. Removing Sparse Terms
+
+See what transformations are available TM package.
+
+```{r}
+getTransformations()
+```
+
+The function `tm_map()` is used to apply one of these transformations across all documents.
+
+```{r}
+docs <- tm_map(docs, content_transformer(tolower)) # convert all text to lower case
+as.character(docs[[16]])
+```
+
+Using `tm_map`, apply the following transformations. **Hint**: You may have to look up the help files for these functions.
+1. removePunctuation
+2. removeNumbers
+3. removeWords (see help file to remove stop words)
+4. stripWhitespace
+5. stemDocument
+
+```{r}
+# remove Puncturation
+docs <- tm_map(docs, removePunctuation) 
+as.character(docs[[16]])
+
+# remove Numbers
+docs <- tm_map(docs, removeNumbers) 
+as.character(docs[[16]])
+
+# remove common words
+docs <- tm_map(docs, removeWords, stopwords("english")) 
+stopwords("english") # check out what was removed
+as.character(docs[[16]])
+
+# remove own stop words
+docs <- tm_map(docs, removeWords, c("prince")) 
+as.character(docs[[16]])
+
+# strip white space
+docs <- tm_map(docs, stripWhitespace) 
+as.character(docs[[16]])
+
+# stem the document
+docs <- tm_map(docs, stemDocument) 
+as.character(docs[[16]])
+```
+
+### 1.3 Creating a DTM
+
+A document term matrix is simply a matrix with documents as the rows and terms as the columns and a count of the frequency of words as the cells of the matrix. We use `DocumentTermMatrix()` to create the matrix:
+```{r}
+dtm <- DocumentTermMatrix(docs)
+dtm
+```
+
+`tm` also lets us convert a corpus to a DTM while completing the pre-processing steps in one step.
+
+```{r}
+dtm <- DocumentTermMatrix(docs,
+           control = list(stopwords = TRUE,
+                          tolower = TRUE,
+                          removeNumbers = TRUE,
+                          removePunctuation = TRUE,
+                          stemming=TRUE))
+```
+
+### 1.4 Weighting
+
+One common pre-processing step that some applicaitons may call for is applying tf-idf weights. The [tf-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf), or term frequency-inverse document frequency, is a weight that ranks the importance of a term in its contextual document corpus. The tf-idf value increases proportionally to the number of times a word appears in the document, but is offset by the frequency of the word in the corpus, which helps to adjust for the fact that some words appear more frequently in general. In other words, it places importance on terms frequent in the document but rare in the corpus.
+
+
+```{r}
+dtm.weighted <- DocumentTermMatrix(docs,
+           control = list(weighting =function(x) weightTfIdf(x, normalize = TRUE),
+                          stopwords = TRUE,
+                          tolower = TRUE,
+                          removeNumbers = TRUE,
+                          removePunctuation = TRUE,
+                          stemming=TRUE))
+```
+
+Compare first 5 rows and 5 columns of the `dtm` and `dtm.weighted`. What do you notice?
+**hint**: Use the `inspect` function and pass your subsetted dtm object.
+
+```{r}
+inspect(dtm[1:5,1:5])
+inspect(dtm.weighted[1:5,1:5])
+```
+
+## 2. Exploring the DTM
+
+### 2.1 Dimensions
+
+Let's look at the structure of our DTM. Print the dimensions of the DTM. How many documents do we have? How many terms?
+
+```{r}
+# how many documents? how many terms?
+dim(dtm)
+```
+
+### 2.2 Frequencies
+
+We can obtain the term frequencies as a vector by converting the document term matrix into a matrix and using `colSums` to sum the column counts:
+
+```{r}
+ # how many terms?
+freq <- colSums(as.matrix(dtm))
+length(freq)
+```
+
+By ordering the frequencies we can list the most frequent terms and the least frequent terms.
+
+```{r}
+# order
+ord <- order(freq)
+
+# Least frequent terms
+freq[head(ord)]
+
+# most frequent
+freq[tail(ord)]
+```
+
+### 2.3 Plotting frequencies
+
+Make a plot that shows the frequency of frequencies for the terms. (For example, how many words are used only once? 5 times? 10 times?)
+
+```{r}
+# frequency of frenquencies
+head(table(freq),15)
+tail(table(freq),15)
+
+# plot
+plot(table(freq))
+```
+
+We can reorder columns of DTM to show most frequent terms first:
+
+```{r}
+dtm.ordered <- dtm[,order(freq, decreasing = T)]
+inspect(dtm.ordered[1:5,1:5])
+```
+
+### 2.4 Exploring word frequences
+
+The TM package has lots of useful functions to help you explore common words and  associations:
+
+```{r}
+# Have a look at common words
+findFreqTerms(dtm, lowfreq=100) # words that appear at least 100 times
+
+# Which words correlate with "war"?
+findAssocs(dtm, "war", 0.3)
+```
+
+We can even make wordclouds showing the most commons terms:
+
+```{r}
+# plot the most frequent words
+freq <- sort(colSums(as.matrix(dtm)),decreasing=TRUE)
+head(freq)
+
+# wordcoulds!
+library(wordcloud)
+set.seed(123)
+wordcloud(names(freq), freq, max.words=100, colors=brewer.pal(6,"Dark2"))
+```
+
+### 2.5 Remove sparse terms.
+
+Somtimes we want to remove sparse terms and thus inrease efficency. Look up the help file for the function `removeSparseTerms`. Using this function, create an objected called `dtm.s` that contains only terms with <.9 sparsity (meaning they appear in more than 10% of documents).
+
+```{r}
+dtm.s <- removeSparseTerms(dtm,.9)
+dtm # 2365 terms
+dtm.s # 135 terms
+dtm.s.matrix <- as.matrix(dtm.s)
+colSums(x>0) / nrow(dtm)
+```
+
+## 3. Exporting the DTM
+
+### 3.1
+We can convert a DTM to a matrix or data.frame in order to write to a csv, add meta data, etc.
+
+First create an object that converts the `dtm` to a dataframe.
+
+```{r}
+# coerce into dataframe
+dtm <- as.data.frame(as.matrix(dtm))
+names(docs)  # names of documents
+```
+
+### 3.2
+Now add a column called `doc_section`. For the first 100 rows, the value of this column should be "Section 1". For documents 101-188, the section should be "Section 2".
+
+```{r}
+# add fake column for section
+dtm$doc_section <- "NA"
+dtm$doc_section[1:100] <- "Section 1"
+dtm$doc_section[101:188] <- "Section 2"
+dtm$doc_section <- as.factor(dtm$doc_section)
+
+# check to see if they're the same number of documents per author
+summary(dtm$doc_section)
+```
+
+### 3.3
+
+Export the dataframe as a csv.
+
+## 4. Bonus: rTextTools
+
+FYI: We can use `rTextTools` to go directly from dataframe to DTM, completing pre-processing stems automatically. 
+
+```{r}
+# Convert to DTM
+dtm <- create_matrix(docs.df$text, language="english", removeNumbers=TRUE,
+                       stemWords=TRUE, toLower = TRUE, removePunctuation = TRUE)
+```

@@ -1,0 +1,148 @@
+---
+title: "Interactive Code Lecture 10"
+author: "150B/355B Introduction to Machine Learning"
+date: "2/15/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 1. Comparing Songs on the Thriller Album
+
+To demonstrate sentiment analysis, we're going to explore lyrics from Michael Jackson's Thriller album. 
+
+Road the code below to get started.
+
+```{r}
+rm(list=ls())
+setwd('~/YOUR/PATH/HERE/10_Dictionary')
+library(tm)
+
+thriller <- read.csv("thriller.csv")
+```
+
+## 1.1 
+
+First we must preprocess the corpus. Create a document-term matrix from the `Lyrics` column of the `thriller` data frame. Complete the following preprocessing steps:
+- convert to lower
+- remove stop words
+- remove numbers
+- remove punctuation.
+
+**Think**: Why do you think stemming is inappropriate for this application?
+
+```{r}
+# preprocess and create DTM
+docs <- Corpus(VectorSource(thriller$Lyrics))
+
+dtm <- DocumentTermMatrix(docs,
+           control = list(tolower = TRUE,
+                          removeNumbers = TRUE,
+                          removePunctuation = TRUE,
+                          stopwords = TRUE
+                         ))
+# convert to matrix, and from there convert again to data frame
+dtm <- as.data.frame(as.matrix(dtm))
+```
+
+## 2. Setting up the sentiment dictionary
+
+## 2.1
+
+We're going to use sentiment dictionaries from the `tidytext` package. Install and load the package.
+
+```{r}
+install.packages("tidytext") # only install a package once!
+library(tidytext) # load it each session
+```
+ 
+## 2.2 
+
+Using the `get_sentiments` function, load the "bing" dictionary and store it in an object called `sent`. 
+
+```{r}
+sent <- get_sentiments("bing")
+head(sent)
+```
+
+## 2.3
+
+Add a column to `sent` called `score`. This column should hold a "1" for positive words and "-1" for negative words.
+
+```{r}
+sent$score <- ifelse(sent$sentiment=="positive", 1, -1)
+```
+
+## 3. Scoring the Thriller album
+
+## 3.1 
+
+We're now ready to score each song. 
+
+(**NB**: There are probably many ways to program a script that performs this task. If you can think of a more elegant way, go for it!)
+
+First, we'll create a dataframe that holds all the words in our dtm along with their sentiment score.
+
+```{r}
+# get all the words in our dtm and put it in a dataframe
+words = data.frame(word = colnames(dtm))
+head(words)
+
+# get their sentiment scores
+words <- merge(words, sent, all.x = T)
+head(words)
+
+# replace NAs with 0s
+words$score[is.na(words$score)] <- 0
+head(words)
+```
+
+## 3.2
+
+We can now use matrix algebra (!!) to multiply our dtm by the scoring vector. This will return to us a score for each document (i.e., song).
+
+```{r}
+# calculate documents scores with matrix algebra! 
+scores <- as.matrix(dtm) %*% words$score
+
+# put it in the original documents data frame
+thriller$sentiment <- scores
+```
+
+Which song is happiest? Go listen to the song and see if you agree.
+
+## 4. Making a function
+
+## 4.1 
+
+Using the code we wrote above, make a function that accepts 1) a vector of texts, and 2) a sentiment dictionary (i.e. a data frame with words and scores), and returns a vector of sentiment scores for each text
+
+```{r}
+sentiment_score <- function(texts, sent_dict){
+  
+  # YOUR CODE HERE
+  
+  return(scores)
+  
+}
+
+# uncomment the line below to test it out!
+# sentiment_score(thriller$Lyrics, sent)
+```
+
+## 4.2 
+
+Using the function you wrote above, score the Thriller album with the "afinn" dictionary. Compare the scores across the two different dictionaries.
+
+```{r}
+# first load the dictionary
+afinn <- get_sentiments("afinn")
+head(afinn)
+
+# then run the function
+sentiment_score(thriller$Lyrics, afinn)
+```
+

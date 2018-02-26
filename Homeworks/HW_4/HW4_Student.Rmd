@@ -1,0 +1,122 @@
+---
+title: "POL 150B/355B Homework 4"
+date: "Due: 3/1/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = T,
+	warning = F
+)
+```
+
+In this homework, we'll be combining our knowledge of dictionary methods and discriminating words to create a custom scoring system of news articles.
+
+The corpus contains articles about women in Middle Eastern and Western countries (not including the United States), published in the New York Times and Washington Post from 1980 to 2014. Our goal is to compare (and score) articles by the region they cover. In other words, how does U.S. news media portray women in the Middle East, compared to women in Western Europe and Canada?
+
+We'll be working with two data frames:
+
+1. `women` contains the training set. Relevant variables include:
+- text: The full text of each article
+- text.no.noun: The full text each article with proper nouns (names of people, places) removed.
+- region: The geographic region the article is about, i.e. "MENA" (Middle East North Africa) or "West" (Canada and Western Europe.)
+
+2. `unknown`: contains the "test set" of articles. It contains the same variables as `women`, but without the `region` column.
+
+Load the following packages to being.
+
+```{r}
+library(tm)
+library(matrixStats) # for statistics
+
+rm(list=ls())
+setwd("~/YOUR/WORKING/DIRECTORY/HW4")
+```
+
+# 1
+
+## a. 
+
+Load the `women` dataset into R. 
+
+```{r}
+# YOUR CODE HERE
+```
+
+## b. 
+
+Create a document term matrix from the `text` column. The DTM should convert all words to lowercase; remove stop words, numbers and punctuation; and stem each term.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## c. 
+
+Using the `removeSparseTerms` function, remove sparse terms to result in .99 sparsity.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## d. 
+
+Finally, convert the DTM to a data frame.
+
+```{r}
+# YOUR CODE HERE
+```
+
+# 2. Find words distinctive to "MENA" and "West"
+
+## a. 
+
+In lecture, we discussed the "Standardized Mean Difference" score measuring word distinctiveness. Using this score, find the top 10 distinctive words for the West and MENA regions (i.e. West - MENA), respectively.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## b. 
+Create a dataframe called `dict` that contains the top 30 distinctive words for each region, along with their scores. In other words, the dataframe should have dimensions 60 x 2. One column should contain the distinctive words and another column the score for each word.
+
+```{r}
+# YOUR CODE HERE
+```
+
+# 3. Classification
+
+## a. 
+
+Load & preprocess the `unknown` dataset in the same fashion as you did `women`, above.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## b.
+
+Using the `dict` you created above, score each one of the `unknown` documents. Store the scores as a new column in the `unknown` dataframe.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## c.
+
+Create another column called `label` in `unknown` that classifies each article using it's score. Assign label = "MENA" if the score is less than 0, and "West" if the score is greater than or equal to 0. 
+
+```{r}
+# YOUR CODE HERE
+```
+
+## d.
+
+We've given you the correct labels below. How many did you get right using this method?
+
+```{r}
+true.labels <- c("MENA", "West", "MENA", "MENA", "MENA", "MENA", "West", "West", "MENA", "MENA", "MENA", "MENA", "MENA", "MENA", "West", "West", "West", "MENA", "MENA", "MENA", "West", "MENA", "West", "West", "West", "West", "West", "MENA", "West", "MENA", "MENA", "MENA", "MENA", "West", "MENA", "West", "West", "MENA", "MENA", "West", "MENA", "West", "West", "West", "West", "West", "West", "West", "MENA", "West", "West", "West", "MENA", "MENA", "MENA", "MENA", "MENA", "MENA", "MENA", "West", "West", "MENA", "West", "MENA", "West", "West", "West", "MENA", "West", "West", "MENA", "West", "West", "West", "West", "West", "MENA", "MENA", "MENA", "MENA", "MENA", "West", "West", "West", "MENA", "West", "West", "West", "West", "West", "MENA", "MENA", "West", "West", "MENA", "MENA", "MENA", "MENA", "MENA", "West")
+
+# YOUR CODE HERE
+```

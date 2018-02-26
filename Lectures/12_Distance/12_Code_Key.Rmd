@@ -1,0 +1,179 @@
+---
+title: "Interactive Code Lecture 12"
+author: "150B/355B Introduction to Machine Learning"
+date: "2/22/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Prepare 
+
+## 1.1 
+
+Download and install the following packages to get started:
+
+```{r}
+setwd('~/Dropbox/berkeley/Teaching/PoliSci_150B/Lectures/12_Distance')
+rm(list=ls())
+require(tm)
+require(lsa)
+```
+
+## 1.2
+
+In this unit we'll be analyzing a series of press releases from Jeff Flake while he was a House member from Arizona.  We already have the files preprocessed and available in `FlakeMatrix.RData`
+
+Load that file to import the object ``flake_matrix"
+
+```{r}
+# load file
+load('FlakeMatrix.RData')
+
+# print the dimensions of the DTM. How many documents + words are there?
+dim(flake_matrix)
+```
+
+## 2. Euclidean Distance
+
+### 2.1 
+
+The function `dist()` allows for calculation of distances. Check out the help file and notice the different options for the `method` argument. The default is euclidean.
+
+```{r}
+?dist
+```
+
+### 2.2 
+
+Let's use the function to calculate the euclidean distance between the documents.
+
+```{r}
+euclid.dist <- dist(flake_matrix, method = "euclidean")
+```
+
+### 2.3 
+
+This creates an object of class `distance`. You can convert it to a matrix with:
+
+```{r}
+euclid.dist <- as.matrix(euclid.dist)
+```
+
+### 2.4
+
+Find the dimensions of the matrix. Why does it have these dimensions? What does each cell represent?
+
+```{r}
+dim(euclid.dist)
+```
+
+### 2.5 
+
+For each press release, we want to identify another press release that is "closest" (smallest distance).
+
+Instead of using for-loops, let's try vectorized code with the `apply` family of functions. Vectorized code is faster and tends to be preferred over for-loops in the R community.
+
+First, create a function that passes the index of a document, and returns the index of the document that is closest to it (other than the document itself).
+
+```{r}
+get.closest <- function(matrix, index){
+   row <- matrix[index,]
+   closest <- order(row)[2]
+   return(closest)
+}
+
+# test the function (you should get "313")
+get.closest(euclid.dist, 1)
+```
+
+### 2.6
+
+Look up the help page for the `sapply` function. Using this function, calculate the closest document for each email.
+
+```{r}
+?sapply
+
+indices <- 1:nrow(euclid.dist)
+sapply(indices, get.closest, matrix = euclid.dist)
+```
+
+## 3 Cosine Similarity
+
+If we want to use a measure of distance that takes into consideration the length of the press releases, we can calculate the cosine similarity by using the `cosine` function from the `lsa` package.
+
+### 3.1 
+
+Unlike the `dist` function which compares distances between rows, the `cosine` function compares distances between columns. This means that we have the **transpose** our matrix before passing it into the `cosine` function.
+
+**Warning!** The code below might take a minute or two to run.
+
+```{r}
+# transpose matrix
+flake_matrix_t <- t(flake_matrix)
+
+# calculate cosine metric
+cos.sim <- cosine(flake_matrix_t)
+```
+
+### 3.2
+
+Keep in mind that cosine similarity is a measure of similarity (rather than distance) that ranges between 0 and 1 (as it is the cosine of the angle between the two vectors). In order to get a measure of distance (or dissimilarity), we need to "flip" the measure so that a larger angle receives a larger value. The distance measure derived from cosine similarity is therefore one minus the cosine similarity between two vectors.
+
+```{r}
+# convert to dissimilarity distances
+cos.dist <- as.matrix(1-cos.sim) 
+```
+
+### 3.3
+
+Using the techniques you learned above, use `sapply` to calculate the most similar document for each email.
+
+```{r}
+sapply(indices, get.closest, matrix = cos.dist)
+```
+
+## 4. Visualizing distance with MDS
+
+It is often desirable to visualize the pairwise distances between our texts. A general approach to visualizing distances is to assign a point in a plane to each text, making sure that the distance between points is proportional to the pairwise distances we calculated. This kind of visualization is common enough that it has a name, ["multidimensional scaling"](https://en.wikipedia.org/wiki/Multidimensional_scaling) (MDS).
+
+### 4.1 
+
+Run the code below to see how it works. Which documents are unusual according to this visualization? Using `rowSums` on the `flake_matrix`, find out how long the unusual documents are.
+
+```{r}
+# fit the scale
+fit <- cmdscale(euclid.dist, eig=TRUE, k=2) # k is the number of dim
+
+# plot solution 
+x <- fit$points[,1]
+y <- fit$points[,2]
+plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2", 
+  main="Metric	MDS",	type="n")
+text(x, y, labels = 1:nrow(flake_matrix), cex=.7)
+
+# find the average length of the documents
+mean(rowSums(flake_matrix))
+
+# now look the length of the outliers
+rowSums(flake_matrix)[45]
+rowSums(flake_matrix)[150]
+```
+
+### 4.2
+
+Now edit the code above to visualize the documents according to the cosine metric. Why do you think the visualizations differ so much?
+
+```{r}
+# fit the scale
+fit <- cmdscale(cos.dist, eig=TRUE, k=2) # k is the number of dim
+
+# plot solution 
+x <- fit$points[,1]
+y <- fit$points[,2]
+plot(x, y, xlab="Coordinate 1", ylab="Coordinate 2", 
+  main="Metric	MDS",	type="n")
+text(x, y, labels = 1:nrow(flake_matrix), cex=.7)
+```

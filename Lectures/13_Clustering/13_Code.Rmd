@@ -1,0 +1,193 @@
+---
+title: "Interactive Code Lecture 13"
+author: "150B/355B Introduction to Machine Learning"
+date: "2/27/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this unit we'll continue analyzing a series of press releases from Jeff Flake while he was a House member from Arizona. 
+
+## 1. Prepare 
+
+### 1.1 
+
+Download and install the following packages to get started:
+
+```{r}
+setwd('~/Dropbox/berkeley/Teaching/PoliSci_150B/Lectures/13_Clustering')
+rm(list=ls())
+library(tm)
+library(lsa) # install it first, if you haven't already!!
+```
+
+### 1.2
+
+We already have the files preprocessed and available in `FlakeMatrix.RData`
+
+Load that file to import the object `flake_matrix`.
+
+```{r}
+# load file
+load('FlakeMatrix.RData')
+
+# print the dimensions of the DTM. How many documents + words are there?
+dim(flake_matrix)
+```
+
+## 2. Runing k Means
+
+### 2.1 
+
+We're going to use the function `kmeans` to apply k means clustering.  Read the help file to get a sense for how we apply the model. What are the main inputs? What are the main outputs?
+
+```{r}
+?kmeans
+```
+
+### 2.2 
+
+To use `kmeans`, we're going to work with a **normalized** version of our documents, where we divide every value by the Euclidean length of each document. The Euclidean length of a document X is given by `sqrt(sum(x^2))`.
+
+```{r}
+euclid.lengths <- sqrt(rowSums(flake_matrix^2))
+flake_norm <- flake_matrix/euclid.lengths
+```
+
+### 2.3 
+
+We can now use `flake_norm` within `kmeans` to cluster the press releases.  
+
+```{r}
+k <- 3 # assign k = 3
+set.seed(8675309) # Recall that kmeans depends on the initial starting values.  Setting the seed ensures that your code is replicable.  
+k_cluster<- kmeans(flake_norm, centers = k)
+```
+
+### 2.4
+
+Let's take a look at the cluster assignments by examining `k_cluster$cluster`. Which cluster is `10August2007FLAKE293.txt` assigned to?
+
+```{r}
+# get cluster assignments of first 10 documents:
+head(k_cluster$cluster, 10)
+```
+
+### 2.5 
+
+We can access the distribution of the clusters with `k_cluster$size`. Which is the biggest cluster? The smallest?
+```{r}
+k_cluster$size
+```
+
+### 2.6 
+
+Now try running `kmeans` several times with 3 clusters, but don't set the seed.  what do you notice about the cluster assignments and the number of documents per cluster?
+
+```{r}
+# YOUR CODE HERE.
+```
+
+### 2.7
+
+After running `kmeans` several times, run it again with the seed value I provided:
+
+```{r}
+k <- 3 # assign k = 3
+set.seed(8675309) # Recall that kmeans depends on the initial starting values.  Setting the seed ensures that your code is replicable.  
+k_cluster<- kmeans(flake_norm, centers = k)
+```
+
+### 2.8 
+
+Look at the output for `k_cluster$center`.  Notice that it is a 3 x p matrix, where each column describes the average values of the documents assigned to that cluster. Essentially, each entry is providing the exemplar for the documents assigned to that category.  
+
+```{r}
+# assign centers to its own object
+centroids <- k_cluster$center
+
+# take a look at the dimensions
+dim(centroids)
+
+# What does this output mean?
+centroids[, 1000:1005] 
+```
+
+## 3. K-means interpretation
+
+At this point, we have a partition of the press releases into categories, but we don't have a good sense of what those categories mean.  To interpret those categories, we're going to apply both automatic and manual methods to label the categories. 
+
+### 3.1 
+
+Our first approach will be to identify the 10 biggest words for each cluster  I've provided the code here that identifies the ten biggest words associated with each topic.  
+
+```{r}
+## First, we're going to create a matrix to store the key words.  
+key_words <- matrix(NA, nrow = k, ncol=10)
+
+## Now, we iterate over the clusters 
+for(z in 1:k){
+	## we want to identify the ten most prevalent words, on average, for the cluster. 
+  ## To do that, we can use the k_cluster$centers object to get the cluster centroid.
+  ## We then can use the sort function and select the ten most prevalent words.
+	ten_most <- sort(k_cluster$center[z,], decreasing=T)[1:10]
+	
+	## `ten_most` gives us a named vector.
+	## Since we're just interested in the top words, we grab the names of this object and store them.
+	key_words[z,]<- names(ten_most)
+	}
+```
+
+Based on the keywords, make a guess about the distinct content of each cluster.
+
+### 3.2
+
+We might be interested in the words that are prevalent in a cluster but not prevalent elsewhere.
+
+We can modify our keyword procedure slightly to obtain those **distinct** keywords.
+
+```{r}
+key_words2<- matrix(NA, nrow=k, ncol=10)
+for(z in 1:k){
+	diff<- k_cluster$center[z,] - apply(k_cluster$center[-z, ], 2, mean)
+	key_words2[z,]<- names(sort(diff, decreasing=T)[1:10])
+}
+```
+
+Do you notice any differences?
+
+### 3.3 
+
+Another way to interpret clusers is to read the documents assigned to each cluster.
+
+To do that, download `flake.zip` from the coursework website and unzip the file into your working directory.
+
+Now, reset the working directory to the location of the unzipped flake files. 
+setwd('JEFF_FLAKE_20100')
+
+```{r}
+setwd('JEFF_FLAKE_20100')
+```
+
+### 3.4
+
+`file.show` is a very useful function.  It loads the file in a convenient text editor in R. (there are lots of other ways to do this in R, but I like this method!)
+
+Looking at the files, what is cluster 2 about?  
+
+```{r}
+# what does the following two lines of code do? How does the syntax work?
+file.show(rownames(flake_matrix)[which(k_cluster$cluster==2)[11]])
+file.show(rownames(flake_matrix)[which(k_cluster$cluster==2)[20]])
+
+# Take a look at all files in cluster 2. 
+# Hit the scape button in your console if you want to stop!
+cluster2<- which(k_cluster$cluster==2)
+for(z in 1:length(cluster2)){
+	file.show(rownames(flake_matrix)[which(k_cluster$cluster==2)[z]])
+	readline('wait')
+}
+```

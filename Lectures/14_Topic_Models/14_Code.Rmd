@@ -1,0 +1,151 @@
+---
+title: "Interactive Code Lecture 14"
+author: "150B/355B Introduction to Machine Learning"
+date: "3/1/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This unit gives a brief overview of the stm (structural topic model) package. Please read the vignette for more detail.
+
+Structural topic model is a way to estimate a topic model that includes document-level meta-data. One can then see how topical prevalence changes according to that meta-data.
+
+## 1. Prepare 
+
+### 1.1
+
+First let's load our required packages.
+
+```{r}
+setwd("~/Dropbox/berkeley/Teaching/PoliSci_150B/Lectures/14_Topic_Models")
+rm(list=ls())
+# uncomment if you haven't installed the stm package:
+# install.packages("stm") 
+
+library(stm)
+```
+
+### 1.2
+
+The data we'll be using for this unit consists of all articles about women published in the New York Times and Washington Post, 1980-2014. You worked with a subset of this data in your last homework.
+
+Load the dataset. Notice that we have the text of the articles, along with some metadata.
+
+```{r}
+# Load Data
+women <- read.csv('women-full.csv')
+names(women)
+```
+
+## 2. Preprocessing
+
+### 2.1 
+
+STM has its own unique preprocessing functions and procedure, which I've coded below. Notice that we're going to use the `TEXT.NO.NOUN` column, which contains all the text of the articles without proper nouns (which I removed earlier).
+
+```{r}
+# Pre-process
+temp<-textProcessor(documents = women$TEXT.NO.NOUN, metadata = women)
+meta<-temp$meta
+vocab<-temp$vocab
+docs<-temp$documents
+
+# prep documents in correct format
+out <- prepDocuments(docs, vocab, meta)
+docs<-out$documents
+vocab<-out$vocab
+meta <-out$meta
+```
+
+
+### 2.2 - Exercise 1
+
+Read the help file for the `prepDocuments` function. Alter the code above to keep only words that appear in at least 10 documents.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## 3. Estimate Model
+
+### 3.1 
+
+We're now going to estimate a topic model with 15 topics by regressing topical prevalence on region and year covariates. 
+
+Running full model takes a **long** time to finish. For that reason, we're going to add an argument `max.em.its` which sets the number of iterations. By keeping it low (15) we'll see a rough estimate of the topics. You can always go back and estimate the model to convergence.    
+
+```{r eval=FALSE}
+# Uncomment to run
+model <- stm(docs, vocab, 15, prevalence = ~ REGION + s(YEAR), data = meta, seed = 15, max.em.its = 15)
+```
+
+### 3.2
+
+Let's see what our model came up with! The following tools can be used to evaluate the model. 
+
+- `labelTopics` gives the top words for each topic. 
+- `findThoughts` gives the top documents for each topic (the documents with the highest proportion of each topic)
+
+```{r eval=FALSE}
+# Top Words
+labelTopics(model)
+
+# Example Docs
+findThoughts(model, texts = meta$TITLE, n=2,topics = 1:15)
+```
+
+### 3.3 - Exercise 2
+
+Estimate other models using 5 and 40 topics, respectively. Look at the top words for each topic. How do the topics vary when you change the number of topics?
+
+Now look at your neighbor's model. Did you get the same results? Why or why not?
+
+```{r}
+# YOUR CODE HERE
+```
+
+
+## 4. Interpreting and analyzing the model
+
+### 4.1
+Let's all load a fully-estimated model that I ran before class.
+
+```{r}
+# remove existing objects
+rm(list=ls())
+
+# load the already-estimated model.
+load("stm.RData")
+```
+
+### 4.2 - Exercise 3
+
+Using the functions `labelTopics` and `findThoughts`, hand label the 15 topics. Hold these labels as a character vector called `labels`
+
+```{r}
+# Store your hand labels below.
+labels = c()
+```
+
+Now look at your neighbor's labels. Did you get the same results? Why or why not?
+
+
+### 4.3 Analyze topics
+
+We're now going to see how the topics compare in terms of their prevalence across region. What do you notice about the distribution of topic 9? 
+
+```{r}
+# Corpus Summary
+plot.STM(model, type="summary", custom.labels = labels, main="")
+
+# Estimate Covariate Effects
+prep <- estimateEffect(1:15 ~ REGION + s(YEAR), model, meta = meta, uncertainty = "Global", documents=docs)
+
+# plot topic 9 over region
+regions = c("Asia", "EECA", "MENA", "Africa", "West", "LA")
+plot.estimateEffect(prep, "REGION", method = "pointestimate", topics = 9, printlegend = TRUE, labeltype = "custom", custom.labels = regions, main = "Women's Rights", ci.level = .95, nsims=100)
+```
+

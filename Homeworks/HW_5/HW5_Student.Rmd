@@ -1,0 +1,146 @@
+---
+title: "POL 150B/355B Homework 5"
+date: "Due: 3/8/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = T,
+	warning = F
+)
+```
+
+In this homework assignment, we will analyze political blogs from 2008. We are interested in exploring the themes and topics political commentators address, and the extent to which these themes differ across the liberal-conservative spectrum.
+
+The data we'll be working with is available in the `poliblog5k` object from the `stm` package.
+It includes a 5000 document sample from CMU 2008 Political Blog Corpus (Eisenstein and Xing 2010). Blog posts are from 6 blogs during the U.S. 2008 Presidential Election. It includes the following variables:
+
+- `rating`: a factor variable giving the partisan affiliation of the blog (based on who they supported for president)
+- `day`: the day of the year (1 to 365). All entries are from 2008.
+- `blog`: a two digit character code corresponding to the name of the blog. They are: American Thinker (at), Digby (db), Hot Air (ha), Michelle Malkin (mm), Think Progress (tp), Talking Points Memo (tpm)
+- `text`: the first 50 characters (rounded to the nearest full word).
+
+Please keep all open-ended responses to, at most, one paragraph.
+
+Run the following code to get started.
+
+```{r}
+rm(list=ls())
+setwd("~/Dropbox/berkeley/Teaching/PoliSci_150B/Homeworks/HW_5")
+
+# Required packages
+library(tm)
+library(stm)
+library(matrixStats)
+```
+
+# 1. K-Means Clustering and Calculating Distance
+
+In this section, you will use the kmeans algorithm to cluster the documents. The code below loads the blogs and conducts the usual pre-processing steps.
+
+```{r}
+# import the data
+blogs <- poliblog5k.meta
+
+# create DTM
+docs <- Corpus(VectorSource(blogs$text))
+dtm <- DocumentTermMatrix(docs,
+           control = list(stopwords = T,
+                          tolower = T,
+                          removeNumbers = T,
+                          removePunctuation = T,
+                          stemming=T))
+
+# print the dimensions of the DTM
+dim(dtm)
+
+# convert to matrix
+dtm <- as.data.frame(as.matrix(dtm))
+```
+
+## a. 
+
+Normalize the rows of dtm so that each row sums to 1.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## b. 
+
+Assuming that K = 15, apply K-Means to the tweets with the normalized rows. Report the size (i.e., number of observations) in each cluster. Remember to set the seed so that you can reproduce your work!
+
+```{r}
+# YOUR CODE HERE
+```
+
+## c. 
+
+Report the top 10 1) "most frequent" words, and 2) "most distinctive" words in each cluster.
+
+```{r}
+# YOUR CODE HERE
+```
+
+## d.
+
+Select one cluster of your choice and read (a sample of) documents from that cluster. Apply a hand label and justify your choice.
+
+```{r}
+# YOUR CODE HERE
+```
+
+# 2. Structural Topic Model
+
+In this section you will apply a topic model to the `poliblog5k` corpus using the `stm` package. Recall that `stm` requires our data to be formatted a particular way. So we can't rely on our usual DTM.
+
+Luckily, `stm` provides its own preprocessing functions that we can use to get our data in the right format. We've gone ahead and completed those steps for you.
+
+Run the code below to obtain the following objects:
+- `docs`: contains the documents to supply to stm
+- `vocab` contains the vocab to supply to stm
+- `meta` contains the meta information about the blog to supply to the stm.
+
+```{r}
+data(poliblog5k)
+docs <- poliblog5k.docs
+vocab <- poliblog5k.voc
+meta <- poliblog5k.meta
+```
+
+## a. 
+
+Using the `stm` function, create a topic model where the prevalence of topics depend on the blog's party affiliation. Set the following options:
+
+- `k = 20` (estiamte 20 topics)
+- `init.type = "Spectral"` (a method of initialization that doesn't involve random chance)
+- `prevalence = ~rating` (to examine the prevalence of each topic based on blog's partisanship)
+- `max.em.its = 15` (allow to algorithm to iterate a maximum of 15 times. This will cut down on run time, although it will provide rough cuts of topics.)
+
+We *highly recommend* you read the help file for the `stm` function before attempting this!
+
+```{r}
+# YOUR CODE HERE
+```
+
+## b. 
+
+Using `labelTopics` and the other output from `stm`, assign a hand label to each topic and save these in an object called `labels`.
+
+Then report the prevalence of the topic across the documents. 
+
+```{r}
+# YOUR CODE HERE
+
+labels <- c() # FILL ME OUT
+```
+
+## c.
+
+Using `estimateEffect` and `plot.estimateEffect` compare how Republicans and Democrats differ in their attention to the topics. On what topics are they most distinct? On what topics are they most similar? 
+
+```{r}
+# YOUR CODE HERE
+```
+

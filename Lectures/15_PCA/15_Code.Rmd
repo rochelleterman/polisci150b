@@ -1,0 +1,133 @@
+---
+title: "Interactive Code Lecture 15"
+author: "150B/355B Introduction to Machine Learning"
+date: "3/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This unit gives a brief demonstration of principle component analysis. We'll be using PCA to explore and visualize data on world countries.
+
+The data consists of 107 countries and 21 features about each country from the year 2000. These features capture a range of information, from demographics and development to politics and human rights.
+
+The full list of variables include:
+1. `idealpoint`: idealpoint preference based on UN votes, relative to US.
+2. `polity`: combined polity score, indicating regime type (autocatic<--->democratic)
+3. `polity2`: combined polity score 2, indicating regime type (autocatic<--->democratic)
+4. `democ`: Institutionalized Democracy
+5. `autoc`: Institutionalized Autocracy
+6. `unreg`: UN region 
+7. `physint`: CIRI physical integrity score (ciri)
+8. `speech`: CIRI freedom of speech score (ciri)
+9. `new_empinx`: CIRI Empowerment Rights Index (ciri)
+10. `wecon`: CIRI Women’s Economic Rights (ciri)
+11. `wepol`: CIRI Women’s Political Rights (ciri)
+12. `wosoc`: CIRI Women's Social Rights (ciri)
+13. `elecsd`: CIRI Electoral Self-Determination: (ciri)
+14. `gdp.pc.wdi`: GDP per capita, current US$ (World Bank Development Indicators)
+15. `gdp.pc.un`: GDP per capita, current US$ (UN data)
+16. `pop.wdi`: WDI population mid-year estimates (World Bank Development Indicators)
+17. `amnesty`: Political Terror Score measuring physical integrity rights violations worldwide, from Amnesty International
+18. `statedept`: Political Terror Score measuring physical integrity rights violations worldwide, from Amnesty International
+19. `milper`: Size of Military, (military personnel, thousands) from Correlates of War
+20. `cinc`: Composite Index of Military Capabilities from Correlates of War
+21. `domestic9`: Domestic Conflict / Stability Index, from Banks 2012.
+
+## 1. Prepare 
+
+First let's load our data.
+
+```{r}
+setwd("~/Dropbox/berkeley/Teaching/PoliSci_150B/Lectures/15_PCA")
+rm(list=ls())
+
+# makes the first column the rownames.
+dat <- read.csv("countries.csv", row.names = 1) 
+```
+
+## 2. Computing PCA
+
+We'll be using the `prcomp` function to conduct PCA. There are many other functions that compute PCA, such as `princomp`. They all have slightly different functionality.
+
+### 2.1 
+
+Use `prcomp` to compute the principle components. `prcomp` contains options that automatically `scale` and `center` our data for us. How helpful!
+
+```{r}
+# compute PCA
+pca1 <- prcomp(dat, scale=TRUE, center = TRUE)
+```
+
+### 2.2
+
+The `summary` method describes the importance of the PCs. The first row describes again the standard deviation (i.e., the square roots of the eigenvalue) associated with each PC. Larger numbers means this component is more "interesting" or "important" in the sense that it captures more variation.
+
+The second row shows the proportion of the variance in the data explained by each component while the third row describe the cumulative proportion of explained variance. 
+
+We can see there that the first two PCs accounts for about 57% of the variance of the data.
+
+```{r}
+summary(pca1)
+```
+
+### 2.3 
+
+We can retrive the loadings and scores with:
+
+```{r}
+# loadings are contained in the 'rotation' object.
+loadings <- pca1$rotation
+loadings[1:5, 1:5]
+
+# scores are contained in the 'x' object.
+scores <- pca1$x
+scores[1:5, 1:5]
+```
+
+### 2.4
+
+We can call `plot` on our PCA object, which returns a scree plot of the variances (y-axis) associated with the PCs (x-axis). The figure below is useful to decide how many PCs to retain for further analysis. 
+
+```{r}
+# scree plot
+plot(pca1, type="l",main="Number of Components v. Variance Explained")
+```
+
+## 3. Using PCA to visualize our data
+
+### 3.1
+
+The `biplot` method visualizes both PC loadings and scores. 
+```{r}
+# biplot
+biplot(pca1)
+```
+
+### 3.2: BONUS: ggfortify
+
+The `ggfortify` package lets `ggplot2` know how to interpret PCA objects. After installing and loading `ggfortify`, you can use the `autoplot` function for `prcomp` objects.
+
+```{r}
+install.packages("ggfortify")
+library(ggfortify)
+
+autoplot(pca1)
+```
+
+Passing `shape = FALSE` makes plot with labels instead of points.
+
+```{r}
+autoplot(pca1, shape = F)
+```
+
+Plot loadings with `loadings = TRUE`
+
+```{r}
+autoplot(pca1, shape = F,
+         loadings = T,
+         loadings.label = T)
+```
+

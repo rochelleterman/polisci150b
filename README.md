@@ -1,3 +1,7 @@
+![Creative Commons License](https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png)
+
+This work is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-nc-sa/4.0/).
+
 # POLISCI 150B: Machine Learning for Social Science
 
 Machine learning---the use of algorithms to classify, predict, sort, learn and discover from data---has exploded in use across academic fields, industry, government, and non-profit. This course provides an introduction to machine learning for social scientists. We will introduce state of the art machine learning tools, show how to use those tools in the programming language R, and demonstrate why a social science focus is essential to effectively apply machine learning techniques. Applications of the methods will include forecasting social phenomena, the analysis of social media data, and the automatic analysis of text data. 

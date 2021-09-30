@@ -4,8 +4,6 @@ Machine learning---the use of algorithms to classify, predict, sort, learn and d
 
 [Political Science 150A](https://www.dropbox.com/s/eqkpyd4cv1uhzjb/Polisci150A_syllabus_Fall17.pdf?dl=0) or an equivalent is required. (Prerequisite 150A/355A)
 
-**Please note that materials are still in development, and will be changing.**
-
 **Credits**: Many thanks to Justin Grimmer who created the original course on which this course is based.
 
 ![Creative Commons License](https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png)
